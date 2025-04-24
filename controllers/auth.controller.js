@@ -10,6 +10,47 @@ const signToken = id => {
   });
 };
 
+exports.registerAdmin = async (req, res, next) => {
+  try {
+    const { email, password, adminKey } = req.body;
+
+    // Validación básica
+    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Clave de administrador inválida'
+      });
+    }
+
+    //Crear usuario con rol admin
+    const admin  = await User.create({
+      email,
+      password,
+      role: 'admin'
+    });
+
+    // Generar token
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(201).json({
+      ststus: 'success',
+      token,
+      user: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role
+      }
+    });
+
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.register = async (req, res, next) => {
   try {
     const errors = validationResult(req);
