@@ -17,14 +17,17 @@ router.post(
 
 router.post(
   '/register-admin',
-  authController.protect,
-  restrictTo('super-admin'), // Solo super-admins pueden crear admins
-  [
-    check('email', 'Por favor incluye un email válido').isEmail().normalizeEmail(),
-    check('password', 'La contraseña debe tener al menos 6 caracteres').isLength({ min: 6 }),
-    check('adminKey', 'Clave de administrador requerida').not().isEmpty()
-  ],
-  authController.register
+  protect,
+  (req, res, next) => {
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Solo superadmins pueden registrar administradores'
+      });
+    }
+    next();
+  },
+  authController.registerAdmin
 );
 
 router.post(
