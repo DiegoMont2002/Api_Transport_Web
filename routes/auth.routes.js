@@ -4,6 +4,7 @@ const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { restrictTo } = require('../middlewares/roleMiddleware');
 const { check } = require('express-validator');
+const { protect } = require('../middlewares/auth');
 
 router.post(
   '/register',
@@ -17,12 +18,12 @@ router.post(
 
 router.post(
   '/register-admin',
-  protect,
+  protect, // Ahora debería reconocer el middleware
   (req, res, next) => {
     if (req.user.role !== 'superadmin') {
-      return res.status(403).json({
+      return res.status(403).json({ 
         status: 'fail',
-        message: 'Solo superadmins pueden registrar administradores'
+        message: 'Acceso no autorizado' 
       });
     }
     next();
