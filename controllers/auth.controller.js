@@ -108,26 +108,23 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
-    console.log('Request recibida:', req.body);
     const { email, password } = req.body;
     
     // 1. Validar usuario
     const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ error: "Credenciales inválidas" });
+
+    if (!user || !(await user.comparePassword(password))) {
+      return next(new AppError("Credenciales inválidas" , 401));
     }
 
-    // 2. Validar contraseña
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Credenciales inválidas" });
-    }
-
-    // 3. Generar token (¡usa la variable correcta!)
+    // 2. Asegurar que el rol este en el token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { 
+        id: user._id,
+        role: user.role
+      },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
     // 4. Limpia el token antes de enviarlo
@@ -135,7 +132,7 @@ exports.login = async (req, res, next) => {
 
     res.status(200).json({
       status: "success",
-      token: cleanToken,
+      token,
       user: {
         id: user._id,
         email: user.email,
